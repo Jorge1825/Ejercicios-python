@@ -1,7 +1,8 @@
-
 import math
 import os
 
+
+# En este algoritmo la maquina quiere la menor puntuacion y el humano la maxima puntuacion
 
 class triqui:
     def __init__(self):
@@ -83,13 +84,21 @@ class triqui:
 
     def iniciarJuego(self):
             JugadorHuma = JugadorHumano(self.LetraJugador)
+            JugadorMaquina = Computadora(self.LetraMaquina)
 
             while True:
+                os.system("cls")
                 print("Es el turno del jugador")
                 self.MostrarTablero()
 
                 jugada = JugadorHuma.movimiento(self.tablero)
                 self.tablero[jugada] = self.LetraJugador
+                if(self.JuegoGanador()):
+                    break
+
+
+                jugada = JugadorMaquina.moviMaqunina(self.tablero)
+                self.tablero[jugada] = self.LetraMaquina
                 if(self.JuegoGanador()):
                     break
 
@@ -120,7 +129,9 @@ class JugadorHumano:
 #Usar Intelegencia Artifical
 
 class Computadora(triqui):
-    
+    def __init__(self,letra):
+        self.letraM = letra
+        self.letraJ = "X" if letra == "O" else "O"
 
     def jugadores(self,estado):
         n = len(estado)
@@ -133,7 +144,10 @@ class Computadora(triqui):
             if(estado[i] == "O"):
                 o += 1
                 
-        return self.LetraJugador if x == o else self.LetraMaquina
+        if(self.letraJ == "X"):
+            return "X" if x==o else "O"
+        if(self.letraJ == "O"):
+            return "O" if x==o else "X"
 
 
     def PosVacias(self, estado):
@@ -143,17 +157,64 @@ class Computadora(triqui):
     def TableMovimientos(self, estado, Vacias):
         nuevoEstado = estado.copy()
         Jugador = self.jugadores(estado)
-        nuevoEstado[Vacias] - Jugador
+        nuevoEstado[Vacias] = Jugador
         return nuevoEstado
         
         
     def Validar(self,estado):
-        if(self.JuegoGana(estado,self.LetraJugador)):
+        if(self.JuegoGana(estado,self.letraJ)):
             return True
-        if(self.JuegoGana(estado,self.LetraMaquina)):
+        if(self.JuegoGana(estado,self.letraM)):
             return True
         
         return False
+    
+    
+    
+    def minmax(self, estado, jugador):
+        #Siguiendo la logica de la IA el humano busca la maxima puntuacion y la maquina la minima
+        
+        
+        maxPuntuacionHumano = self.letraJ
+        minPuntuacionMaquina = 'O' if jugador == 'X' else 'X'
+        
+        if self.Validar(estado):
+            return {'Posicion': None, 'Puntuacion': 1 * (len(self.PosVacias(estado))+1) if minPuntuacionMaquina ==maxPuntuacionHumano else -1 *(len(self.PosVacias(estado)) +1)}  #Si el jugador gana devuelve una puntuacion positiva y la maquina una negativa
 
+        elif self.TableroVacio(estado):
+            return {'Posicion': None, 'Puntuacion': 0} #Si el tablero esta vacio devuelve una puntuacion 0
+            
+        
+        if jugador == maxPuntuacionHumano: #Condicional para calcular la maxima puntuacion y la minima puntucion 
+            puntua = {'Posicion': None, 'Puntuacion': -math.inf}
+            
+        else:
+            puntua = {'Posicion': None, 'Puntuacion': math.inf}
+            
+        
+        
+        for posibleMovimiento in self.PosVacias(estado):
+            nuevoTablero = self.TableMovimientos(estado, posibleMovimiento) #Se crea un nuevo tablero con el movimiento posible
+            futuroResultado = self.minmax(nuevoTablero, minPuntuacionMaquina) #Se calcula el resultado del movimiento posible
+        
+            futuroResultado['Posicion'] = posibleMovimiento #Se agrega la posicion del movimiento posible
+            
+            
+            if jugador == maxPuntuacionHumano:
+                if futuroResultado['Puntuacion'] > puntua['Puntuacion']: #Si el resultado es mayor que la puntuacion actual se actualiza la puntuacion
+                    puntua = futuroResultado
+            
+            else: #Si el jugador es la maquina
+                if futuroResultado['Puntuacion'] < puntua['Puntuacion']: #Si el resultado es menor que la puntuacion actual se actualiza la puntuacion
+                    puntua = futuroResultado
+                    
+        return puntua #Se devuelve la puntuacion del movimiento posible
+        
+        
+        
+    def moviMaqunina(self, estado):
+        mejorMovimiento = self.minmax(estado, self.letraM)['Posicion'] #Se calcula el mejor movimiento para la maquina
+        return mejorMovimiento
+            
 Triqui = triqui()
 Triqui.iniciarJuego()
